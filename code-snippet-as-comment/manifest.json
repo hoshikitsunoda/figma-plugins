@@ -1,0 +1,14 @@
+{
+  "name": "Copy code snippet",
+  "id": "1292791844069436944",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["https://cdnjs.cloudflare.com"]
+  },
+  "permissions": ["currentuser"]
+}

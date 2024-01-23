@@ -1,0 +1,188 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Layer Code Snippet Plugin</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 16px;
+        background-color: #f6f8fa;
+      }
+
+      textarea,
+      pre {
+        width: 100%;
+        padding: 8px;
+        font-family: monospace;
+        border: 1px solid #d1d5da;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+      }
+
+      button {
+        background-color: #1b1f4f;
+        color: #fff;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-bottom: 8px;
+      }
+
+      button:hover {
+        background-color: #1b1f4f;
+      }
+
+      button:active {
+        background-color: #1b1f4f;
+      }
+
+      button:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(27, 31, 79, 0.3);
+      }
+
+      .button-container {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css"
+    />
+  </head>
+  <body>
+    <textarea
+      id="codeSnippet"
+      placeholder="Enter your code snippet..."
+      rows="25"
+      style="display: none"
+    ></textarea>
+    <pre style="display: none"><code id="highlightedSnippet"></code></pre>
+    <div class="button-container">
+      <button id="saveSnippet" style="display: none">
+        Save Snippet to Layer
+      </button>
+      <button id="copySnippet" style="display: none">Copy to Clipboard</button>
+      <button id="removeSnippet" style="display: none">Remove Snippet</button>
+    </div>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+      integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script>
+      document
+        .getElementById("saveSnippet")
+        .addEventListener("click", function () {
+          const codeSnippet = document.getElementById("codeSnippet").value;
+
+          if (codeSnippet.trim() === "") {
+            alert("Please provide a code snippet.");
+            return;
+          }
+
+          parent.postMessage(
+            {
+              pluginMessage: { type: "save-snippet", codeSnippet: codeSnippet },
+            },
+            "*"
+          );
+        });
+
+      document
+        .getElementById("copySnippet")
+        .addEventListener("click", function () {
+          if (document.getElementById("codeSnippet").style.display !== "none") {
+            const textarea = document.getElementById("codeSnippet");
+            textarea.select();
+            codeToCopy = textarea.value;
+          } else {
+            const codeBlock = document.getElementById("highlightedSnippet");
+            codeToCopy = codeBlock.textContent;
+          }
+
+          const tempTextarea = document.createElement("textarea");
+          tempTextarea.value = codeToCopy;
+          document.body.appendChild(tempTextarea);
+          tempTextarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(tempTextarea);
+
+          parent.postMessage(
+            { pluginMessage: { type: "snippet-copied" } },
+            "*"
+          );
+        });
+
+      document
+        .getElementById("removeSnippet")
+        .addEventListener("click", function () {
+          parent.postMessage(
+            { pluginMessage: { type: "remove-snippet" } },
+            "*"
+          );
+        });
+
+      function normalizeSnippet(snippet) {
+        const lines = snippet.split("\n").filter((line) => line.trim() !== "");
+        const minIndent = Math.min(
+          ...lines.map((line) => line.match(/^ */)[0].length)
+        );
+        return lines
+          .map((line) => line.slice(minIndent))
+          .join("\n")
+          .trim();
+      }
+
+      window.onmessage = (event) => {
+        const codeSnippet = event.data.pluginMessage.codeSnippet;
+        if (
+          event.data.pluginMessage.type === "display-snippet" ||
+          event.data.pluginMessage.type === "display-snippet-textarea"
+        ) {
+          document.getElementById("codeSnippet").value = codeSnippet;
+        } else if (
+          event.data.pluginMessage.type === "display-snippet-formatted"
+        ) {
+          let codeSnippet = event.data.pluginMessage.codeSnippet;
+          codeSnippet = normalizeSnippet(codeSnippet);
+
+          const codeBlock = document.getElementById("highlightedSnippet");
+          codeBlock.textContent = codeSnippet;
+
+          hljs.highlightElement(codeBlock);
+        }
+
+        if (event.data.pluginMessage.type === "user-authorization") {
+          const isAuthorized = event.data.pluginMessage.isAuthorized;
+          document.getElementById("saveSnippet").style.display = isAuthorized
+            ? "block"
+            : "none";
+          document.getElementById("removeSnippet").style.display = isAuthorized
+            ? "block"
+            : "none";
+
+          if (isAuthorized) {
+            document.getElementById("codeSnippet").style.display = "block";
+            document.getElementById("saveSnippet").style.display = "block";
+          } else {
+            document.getElementById(
+              "highlightedSnippet"
+            ).parentNode.style.display = "block";
+          }
+
+          document.getElementById("copySnippet").style.display = "block";
+        }
+      };
+    </script>
+  </body>
+</html>
